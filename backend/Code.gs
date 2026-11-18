@@ -43,6 +43,18 @@ var MODULES = {
     titleUr: 'روزمرہ کیمپس سیفٹی اور رسائی',
     sections: ['start', 'objectives', 'slips', 'stairs', 'electrical', 'access', 'respect', 'report', 'practice', 'apply'],
     key: ['b', 'a', 'c', 'b', 'a', 'c', 'b', 'c']
+  },
+  m3: {
+    title: 'Emergency Response and First-Aid Awareness',
+    titleUr: 'ہنگامی ردِعمل اور ابتدائی طبی امداد سے آگاہی',
+    sections: ['start', 'objectives', 'response', 'call', 'collapse', 'choking', 'bleeding', 'seizures', 'burns', 'resources', 'practice', 'apply'],
+    key: ['b', 'a', 'c', 'b', 'a', 'c', 'b', 'a']
+  },
+  m4: {
+    title: 'Infection Prevention and Hand Hygiene',
+    titleUr: 'انفیکشن سے بچاؤ اور ہاتھوں کی صفائی',
+    sections: ['start', 'objectives', 'everyone', 'when', 'choice', 'how', 'ppe', 'respiratory', 'surfaces', 'report', 'practice', 'apply'],
+    key: ['b', 'a', 'c', 'b', 'a', 'c', 'b', 'a']
   }
 };
 
