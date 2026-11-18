@@ -3,7 +3,7 @@ window.KGMC_CONFIG = {
   /* Paste the Google Apps Script web-app URL between the quotes.
      While this is empty the site runs in DEMO MODE: everything is stored only in the
      visitor's own browser, no emails are sent and nothing reaches the instructor. */
-  BACKEND_URL: "",
+  BACKEND_URL: "https://script.google.com/macros/s/AKfycbxqbzyXHl6cR8xc02UvSM4dKkAWGKYEOgmS0YpclIOtRZ0_JF5zNBOduZtxNSk5FyCX/exec",
 
   PROGRAM: ["KGMC Campus Safety Learning Program", "کے جی ایم سی کیمپس سیفٹی لرننگ پروگرام"],
   COLLEGE: ["Khyber Girls Medical College, Peshawar", "خیبر گرلز میڈیکل کالج، پشاور"],
