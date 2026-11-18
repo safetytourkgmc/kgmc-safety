@@ -8,6 +8,7 @@ Live site: https://safetytourkgmc.github.io/kgmc-safety/
 - `assets/config.js` holds the settings, including the link to the college's Google Sheet.
 - `content/` holds the text of each module, as English and Urdu pairs.
 - `images/` holds campus photographs and illustrations.
+- `backend/Code.gs` is the master copy of the Google Apps Script that keeps the records, marks quizzes and sends emails. It does not run from here: after any change, paste it into the Apps Script editor of the college's Google Sheet and choose Deploy > Manage deployments > Edit > New version.
 
 Maintained by the Safety Tour and Infection Control Committee, KGMC.
 
