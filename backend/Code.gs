@@ -43,6 +43,54 @@ var MODULES = {
     titleUr: 'روزمرہ کیمپس سیفٹی اور رسائی',
     sections: ['start', 'objectives', 'slips', 'stairs', 'electrical', 'access', 'respect', 'report', 'practice', 'apply'],
     key: ['b', 'a', 'c', 'b', 'a', 'c', 'b', 'c']
+  },
+  m3: {
+    title: 'Emergency Response and First-Aid Awareness',
+    titleUr: 'ہنگامی ردِعمل اور ابتدائی طبی امداد سے آگاہی',
+    sections: ['start', 'objectives', 'response', 'call', 'collapse', 'choking', 'bleeding', 'seizures', 'burns', 'resources', 'practice', 'apply'],
+    key: ['b', 'a', 'c', 'b', 'a', 'c', 'b', 'a']
+  },
+  m4: {
+    title: 'Infection Prevention and Hand Hygiene',
+    titleUr: 'انفیکشن سے بچاؤ اور ہاتھوں کی صفائی',
+    sections: ['start', 'objectives', 'everyone', 'when', 'choice', 'how', 'ppe', 'respiratory', 'surfaces', 'report', 'practice', 'apply'],
+    key: ['b', 'a', 'c', 'b', 'a', 'c', 'b', 'a']
+  },
+  m5: {
+    title: 'Waste Segregation and Sharps Safety',
+    titleUr: 'کچرے کی علیحدگی اور نوکیلی اشیاء سے حفاظت',
+    sections: ['start', 'objectives', 'types', 'source', 'sharps', 'container', 'found', 'handling', 'exposure', 'practice', 'apply'],
+    key: ['b', 'a', 'c', 'b', 'a', 'c', 'b', 'c']
+  },
+  m6: {
+    title: 'Occupational Exposure and Vaccination',
+    titleUr: 'پیشہ ورانہ خطرات اور ویکسینیشن',
+    sections: ['start', 'objectives', 'what', 'prevent', 'action', 'assessment', 'hepb', 'other', 'followup', 'practice', 'apply'],
+    key: ['a', 'b', 'c', 'a', 'b', 'c', 'a', 'b']
+  },
+  m7: {
+    title: 'Laboratory, Chemical and Biological Safety',
+    titleUr: 'لیبارٹری، کیمیائی اور حیاتیاتی حفاظت',
+    sections: ['start', 'objectives', 'hazards', 'labels', 'storage', 'rules', 'protection', 'biological', 'spill', 'exposure', 'practice', 'apply'],
+    key: ['b', 'a', 'c', 'b', 'a', 'c', 'b', 'a']
+  },
+  m8: {
+    title: 'Cleaning, Food and Water Hygiene',
+    titleUr: 'صفائی، خوراک اور پانی کی حفظانِ صحت',
+    sections: ['start', 'objectives', 'roles', 'cleaning', 'method', 'food', 'ill', 'water', 'pests', 'illness', 'practice', 'apply'],
+    key: ['b', 'a', 'c', 'b', 'a', 'c', 'b', 'a']
+  },
+  m9: {
+    title: 'Campus Security and Emergency Support',
+    titleUr: 'کیمپس کی سکیورٹی اور ہنگامی معاونت',
+    sections: ['start', 'objectives', 'shared', 'entry', 'fair', 'report', 'threat', 'items', 'emergency', 'duties', 'privacy', 'practice', 'apply'],
+    key: ['b', 'a', 'c', 'b', 'a', 'c', 'b', 'a']
+  },
+  m10: {
+    title: 'IT Safety and Responsible Use of Learning Resources',
+    titleUr: 'آئی ٹی کی حفاظت اور تعلیمی وسائل کا ذمہ دارانہ استعمال',
+    sections: ['start', 'objectives', 'roles', 'account', 'phishing', 'devices', 'confidential', 'backups', 'library', 'ai', 'incident', 'itduties', 'practice', 'apply'],
+    key: ['b', 'c', 'a', 'b', 'c', 'a', 'b', 'c']
   }
 };
 
