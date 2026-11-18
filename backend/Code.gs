@@ -55,6 +55,18 @@ var MODULES = {
     titleUr: 'انفیکشن سے بچاؤ اور ہاتھوں کی صفائی',
     sections: ['start', 'objectives', 'everyone', 'when', 'choice', 'how', 'ppe', 'respiratory', 'surfaces', 'report', 'practice', 'apply'],
     key: ['b', 'a', 'c', 'b', 'a', 'c', 'b', 'a']
+  },
+  m5: {
+    title: 'Waste Segregation and Sharps Safety',
+    titleUr: 'کچرے کی علیحدگی اور نوکیلی اشیاء سے حفاظت',
+    sections: ['start', 'objectives', 'types', 'source', 'sharps', 'container', 'found', 'handling', 'exposure', 'practice', 'apply'],
+    key: ['b', 'a', 'c', 'b', 'a', 'c', 'b', 'c']
+  },
+  m6: {
+    title: 'Occupational Exposure and Vaccination',
+    titleUr: 'پیشہ ورانہ خطرات اور ویکسینیشن',
+    sections: ['start', 'objectives', 'what', 'prevent', 'action', 'assessment', 'hepb', 'other', 'followup', 'practice', 'apply'],
+    key: ['a', 'b', 'c', 'a', 'b', 'c', 'a', 'b']
   }
 };
 
