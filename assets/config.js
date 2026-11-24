@@ -8,6 +8,10 @@ window.KGMC_CONFIG = {
   PROGRAM: ["KGMC Campus Safety Learning Program", "کے جی ایم سی کیمپس سیفٹی لرننگ پروگرام"],
   COLLEGE: ["Khyber Girls Medical College, Peshawar", "خیبر گرلز میڈیکل کالج، پشاور"],
 
+  /* The college name the registration box starts with. Anyone from another
+     college can type over it, and whatever they enter is printed on their certificate. */
+  DEFAULT_COLLEGE: ["Khyber Girls Medical College", "خیبر گرلز میڈیکل کالج"],
+
   /* Quiz pass mark in percent. Must match PASS_PERCENT in the Apps Script. */
   PASS_PERCENT: 70,
 

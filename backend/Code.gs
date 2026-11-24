@@ -98,16 +98,20 @@ var MODULES = {
 
 var TABS = {
   'Students': ['Email', 'Full name', 'Role', 'Department', 'Language', 'Registered', 'Last active', 'Modules completed',
-               'Certificate ID', 'Certificate date', 'Salt', 'Password hash', 'Reset hash', 'Reset expiry', 'Program feedback given'],
+               'Certificate ID', 'Certificate date', 'Salt', 'Password hash', 'Reset hash', 'Reset expiry', 'Program feedback given',
+               'College', 'Year of study'],
   'Progress': ['Email', 'Full name', 'Module', 'Sections done', 'Sections total', 'Progress %', 'Quiz attempts', 'Best score %',
                'Passed', 'Passed date', 'Confirmation emailed', 'Feedback given', 'Last updated', 'Section list'],
   'Quiz attempts': ['Timestamp', 'Email', 'Module', 'Score', 'Out of', 'Score %', 'Passed', 'Answers'],
   'Feedback': ['Timestamp', 'About', 'Role', 'Department', 'Language', 'Content was clear (1-5)', 'Relevant to me (1-5)',
                'Easy to use (1-5)', 'Most useful', 'To improve'],
-  'Certificates': ['Certificate ID', 'Full name', 'Email', 'Role', 'Department', 'Issued', 'Emailed'],
+  'Certificates': ['Certificate ID', 'Full name', 'Email', 'Role', 'Department', 'Issued', 'Emailed', 'College', 'Year of study'],
   'Visits': ['Date', 'Visits']
 };
-var S = { EMAIL: 0, NAME: 1, ROLE: 2, DEPT: 3, LANG: 4, REG: 5, ACTIVE: 6, DONE: 7, CERT: 8, CERTDATE: 9, SALT: 10, HASH: 11, RHASH: 12, REXP: 13, FB: 14 };
+var S = { EMAIL: 0, NAME: 1, ROLE: 2, DEPT: 3, LANG: 4, REG: 5, ACTIVE: 6, DONE: 7, CERT: 8, CERTDATE: 9, SALT: 10, HASH: 11, RHASH: 12, REXP: 13, FB: 14, COLLEGE: 15, YEAR: 16 };
+
+/* Years of study offered to students at registration. Must match YEARS in the site's app.js. */
+var YEARS = ['First year', 'Second year', 'Third year', 'Fourth year', 'Final year', 'Other'];
 var P = { EMAIL: 0, NAME: 1, MOD: 2, DONE: 3, TOTAL: 4, PCT: 5, ATT: 6, BEST: 7, PASSED: 8, PDATE: 9, MAILED: 10, FB: 11, UPD: 12, LIST: 13 };
 
 function onOpen() {
@@ -200,6 +204,7 @@ function route_(b) {
     case 'progress': return progress_(st, b);
     case 'quiz': return quiz_(st, b);
     case 'feedback': return feedback_(st, b);
+    case 'profile': return profile_(st, b);
   }
   return { ok: false, error: 'server' };
 }
@@ -310,12 +315,14 @@ function register_(b) {
   var name = clean_(b.name, 100);
   var role = ['Student', 'Faculty', 'Staff'].indexOf(b.role) >= 0 ? b.role : '';
   var dept = role === 'Student' ? '' : clean_(b.department, 80);
+  var college = clean_(b.college, 100);
+  var year = role === 'Student' && YEARS.indexOf(b.year) >= 0 ? b.year : '';
   var password = String(b.password || '');
   if (!validEmail_(email) || !name || !role || (role !== 'Student' && !dept)) return { ok: false, error: 'invalid' };
   if (password.length < 8 || password.length > 200) return { ok: false, error: 'weak_password' };
   if (findStudent_(email)) return { ok: false, error: 'email_exists' };
   var salt = Utilities.getUuid(), now = new Date();
-  append_('Students', [email, name, role, dept, b.lang === 'ur' ? 'ur' : 'en', now, now, 0, '', '', salt, hash_(password, salt), '', '', '']);
+  append_('Students', [email, name, role, dept, b.lang === 'ur' ? 'ur' : 'en', now, now, 0, '', '', salt, hash_(password, salt), '', '', '', college, year]);
   return state_(findStudent_(email), true);
 }
 
@@ -363,6 +370,18 @@ function resetConfirm_(b) {
 
 /* ------------------------------------------------------------------ progress */
 
+/* Completes an account registered before the college and year were asked for. */
+function profile_(st, b) {
+  var college = clean_(b.college, 100);
+  if (!college) return { ok: false, error: 'invalid' };
+  if (st.row[S.ROLE] === 'Student') {
+    if (YEARS.indexOf(b.year) < 0) return { ok: false, error: 'invalid' };
+    setStudent_(st, S.YEAR, b.year);
+  }
+  setStudent_(st, S.COLLEGE, college);
+  return state_(st);
+}
+
 function state_(st, withToken) {
   var email = String(st.row[S.EMAIL]).toLowerCase(), progress = {};
   progressRows_(email).forEach(function (p) {
@@ -374,7 +393,8 @@ function state_(st, withToken) {
   });
   var out = {
     ok: true,
-    user: { name: st.row[S.NAME], email: email, role: st.row[S.ROLE], department: st.row[S.DEPT], lang: st.row[S.LANG] },
+    user: { name: st.row[S.NAME], email: email, role: st.row[S.ROLE], department: st.row[S.DEPT], lang: st.row[S.LANG],
+            college: st.row[S.COLLEGE] || '', year: st.row[S.YEAR] || '' },
     progress: progress, required: CONFIG.REQUIRED_MODULES,
     certificate: st.row[S.CERT] ? { id: st.row[S.CERT], date: iso_(st.row[S.CERTDATE]) } : null,
     feedback: st.row[S.FB] === 'Yes'
@@ -503,14 +523,15 @@ function issueCertificate_(st) {
   var now = new Date();
   var number = tab_('Certificates').getLastRow();                  // header row counts as 1, so first ID is 0001
   var id = CONFIG.CERT_PREFIX + '-' + now.getFullYear() + '-' + ('000' + number).slice(-4);
-  var sent = emailCertificate_(st.row[S.NAME], st.row[S.EMAIL], st.row[S.ROLE], st.row[S.DEPT], now, id);
-  append_('Certificates', [id, st.row[S.NAME], st.row[S.EMAIL], st.row[S.ROLE], st.row[S.DEPT], now, sent]);
+  var college = st.row[S.COLLEGE] || CONFIG.COLLEGE;
+  var sent = emailCertificate_(st.row[S.NAME], st.row[S.EMAIL], st.row[S.ROLE], st.row[S.DEPT] || st.row[S.YEAR], college, now, id);
+  append_('Certificates', [id, st.row[S.NAME], st.row[S.EMAIL], st.row[S.ROLE], st.row[S.DEPT], now, sent, college, st.row[S.YEAR] || '']);
   setStudent_(st, S.CERT, id);
   setStudent_(st, S.CERTDATE, now);
 }
 
-function emailCertificate_(name, email, role, dept, date, id) {
-  var pdf = Utilities.newBlob(certificateHtml_(name, role, dept, date, id), 'text/html', 'certificate.html')
+function emailCertificate_(name, email, role, dept, college, date, id) {
+  var pdf = Utilities.newBlob(certificateHtml_(name, role, dept, college, date, id), 'text/html', 'certificate.html')
     .getAs('application/pdf').setName('KGMC Safety Certificate ' + id + '.pdf');
   var html =
     '<p>Dear ' + esc_(name) + ',</p><p>Congratulations! You have completed all ' + CONFIG.REQUIRED_MODULES.length +
@@ -521,7 +542,9 @@ function emailCertificate_(name, email, role, dept, date, id) {
   return sendMail_(email, CONFIG.PROGRAM_NAME + ': your certificate of completion', html, [pdf]);
 }
 
-function certificateHtml_(name, role, dept, date, id) {
+/* `dept` is the department for faculty and staff, and the year of study for students.
+   `college` is the learner's own college, which may differ from the college issuing the program. */
+function certificateHtml_(name, role, dept, college, date, id) {
   var logo = '<img src="data:image/png;base64,' + LOGO_DATA + '" style="height:96px"><br>';   // KGMC logo, stored at the bottom of this file
   if (CONFIG.LOGO_URL) {
     try {
@@ -546,7 +569,8 @@ function certificateHtml_(name, role, dept, date, id) {
     '<h1 style="font-size:40px;color:#0a4539;margin:20px 0 6px">Certificate of Completion</h1>' + divider +
     '<p style="font-size:16px;margin:14px 0 0">This certifies that</p>' +
     '<p style="font-size:32px;margin:8px 0 2px;color:#0a4539"><b>' + esc_(name) + '</b></p>' +
-    '<p style="font-size:15px;margin:0 0 18px">' + who + '</p>' +
+    '<p style="font-size:15px;margin:0 0 2px">' + who + '</p>' +
+    (college ? '<p style="font-size:18px;margin:0 0 16px;color:#0a4539"><b>' + esc_(college) + '</b></p>' : '<div style="height:16px"></div>') +
     '<p style="font-size:16px;line-height:1.7;margin:0">has completed all ' + CONFIG.REQUIRED_MODULES.length + ' modules of the<br>' +
     '<b style="font-size:19px">' + esc_(CONFIG.PROGRAM_NAME) + '</b><br>and passed each knowledge assessment.</p>' +
     '<p style="font-size:14px;margin:20px 0 10px">Date: <b>' + dateText + '</b> &nbsp;&nbsp;|&nbsp;&nbsp; Certificate ID: <b>' + id + '</b></p>' +
@@ -560,7 +584,7 @@ function certificateHtml_(name, role, dept, date, id) {
 
 function sendTestCertificate() {
   var me = Session.getEffectiveUser().getEmail();
-  var result = emailCertificate_('Sample Learner', me, 'Staff', 'Sample Department', new Date(), CONFIG.CERT_PREFIX + '-TEST-0000');
+  var result = emailCertificate_('Sample Learner', me, 'Staff', 'Sample Department', CONFIG.COLLEGE, new Date(), CONFIG.CERT_PREFIX + '-TEST-0000');
   SpreadsheetApp.getUi().alert(result === 'Yes' ? 'A sample certificate was sent to ' + me : 'The email could not be sent. ' + result);
 }
 

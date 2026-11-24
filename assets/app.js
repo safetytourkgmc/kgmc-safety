@@ -8,6 +8,18 @@
   var CONTENT = window.KGMC_CONTENT || {};
   var INTRO = window.KGMC_INTRO || { title: ['About this course', ''], blocks: [] };
   var DEMO = !CFG.BACKEND_URL;
+  /* Years of study offered to students. Must match YEARS in the Apps Script. */
+  var YEARS = ['First year', 'Second year', 'Third year', 'Fourth year', 'Final year', 'Other'];
+  function yearOptions(chosen) {
+    return YEARS.map(function (y, i) {
+      return '<option value="' + esc(y) + '"' + (chosen === y ? ' selected' : '') + '>' + esc(T('y' + (i + 1))) + '</option>';
+    }).join('');
+  }
+  function collegeField(value) {
+    return '<label class="field"><span>' + esc(T('collegeLabel')) + '</span>' +
+      '<input id="f-college" type="text" maxlength="100" dir="auto" autocomplete="organization" value="' + esc(value || CFG.DEFAULT_COLLEGE[0]) + '">' +
+      '<small>' + esc(T('collegeHint')) + '</small></label>';
+  }
   var REQUIRED = MODS.map(function (m) { return m.id; });
 
   /* ---------- small storage wrapper (works even when the browser blocks storage) ---------- */
@@ -33,6 +45,18 @@
   var S = {
     langBtn: ['اردو', 'English'],
     home: ['Home', 'ہوم'],
+    yearLabel: ['Year of study', 'سالِ تعلیم'],
+    y1: ['First year', 'پہلا سال'],
+    y2: ['Second year', 'دوسرا سال'],
+    y3: ['Third year', 'تیسرا سال'],
+    y4: ['Fourth year', 'چوتھا سال'],
+    y5: ['Final year', 'آخری سال'],
+    y6: ['Other', 'دیگر'],
+    collegeLabel: ['Your college', 'آپ کا کالج'],
+    collegeHint: ['This name will be printed on your certificate. Change it if you are from another college.', 'یہ نام آپ کے سرٹیفکیٹ پر چھپے گا۔ اگر آپ کسی اور کالج سے ہیں تو اسے تبدیل کر لیں۔'],
+    profileTitle: ['One more detail', 'ایک اور تفصیل'],
+    profileLead: ['Please confirm your college before you continue. It will be printed on your certificate.', 'جاری رکھنے سے پہلے براہِ کرم اپنے کالج کی تصدیق کر دیں۔ یہ آپ کے سرٹیفکیٹ پر چھپے گا۔'],
+    saveOn: ['Save and continue', 'محفوظ کریں اور جاری رکھیں'],
     listen: ['Listen', 'سنیں'],
     listenOn: ['Listening on', 'سننا آن ہے'],
     listenOff: ['Listening off', 'سننا بند ہے'],
@@ -237,14 +261,16 @@
     var db = store.get('demo_db') || { users: {} };
     function out(o) { store.set('demo_db', db); return Promise.resolve(o); }
     function state(u) {
-      return { ok: true, token: u.email, user: { name: u.name, email: u.email, role: u.role, department: u.department, lang: u.lang },
+      return { ok: true, token: u.email, user: { name: u.name, email: u.email, role: u.role, department: u.department, lang: u.lang,
+                 college: u.college || '', year: u.year || '' },
                progress: u.progress, certificate: u.certificate || null, feedback: !!u.feedback,
                required: MODS.map(function (m) { return m.id; }) };
     }
     var email = String(b.email || '').trim().toLowerCase();
     if (b.action === 'register') {
       if (db.users[email]) return out({ ok: false, error: 'email_exists' });
-      db.users[email] = { name: b.name, email: email, role: b.role, department: b.department || '', lang: b.lang, password: b.password, progress: {} };
+      db.users[email] = { name: b.name, email: email, role: b.role, department: b.department || '', college: b.college || '',
+                          year: b.year || '', lang: b.lang, password: b.password, progress: {} };
       return out(state(db.users[email]));
     }
     if (b.action === 'login') {
@@ -260,6 +286,12 @@
     var u = db.users[b.token];
     if (!u) return out({ ok: false, error: 'session' });
     if (b.action === 'state') return out(state(u));
+    if (b.action === 'profile') {
+      if (!b.college) return out({ ok: false, error: 'invalid' });
+      u.college = b.college;
+      if (u.role === 'Student') u.year = b.year || '';
+      return out(state(u));
+    }
     if (b.action === 'setLang') { u.lang = b.lang; return out({ ok: true }); }
     if (b.action === 'feedback') {
       var allPassed = MODS.every(function (m) { return u.progress[m.id] && u.progress[m.id].passed; });
@@ -405,11 +437,27 @@
       '<label class="field"><span>' + esc(T('role')) + '</span><select id="f-role"><option value="">' + esc(T('choose')) + '</option>' +
       '<option value="Student">' + esc(T('student')) + '</option><option value="Faculty">' + esc(T('faculty')) + '</option><option value="Staff">' + esc(T('staff')) + '</option></select></label>' +
       '<label class="field" id="dept-wrap" hidden><span>' + esc(T('dept')) + '</span><select id="f-dept"><option value="">' + esc(T('choose')) + '</option>' + depts + '</select></label>' +
+      '<label class="field" id="year-wrap" hidden><span>' + esc(T('yearLabel')) + '</span><select id="f-year"><option value="">' + esc(T('choose')) + '</option>' + yearOptions('') + '</select></label>' +
+      collegeField('') +
       field('f-pass', T('password'), 'password', 'autocomplete="new-password" dir="ltr"') +
       field('f-pass2', T('password2'), 'password', 'autocomplete="new-password" dir="ltr"') +
       '<label class="check"><input type="checkbox" id="f-consent"><span>' + esc(T('consent')) + '</span></label>' +
       '<div class="row">' + btn('submit', T('register')) + '</div></form>' +
       '<p><button class="link-btn" data-act="nav" data-v="login">' + esc(T('haveAccount')) + '</button></p></section>';
+  };
+
+  /* An account registered before the college was asked for is completed once, here. */
+  function profileNeeded() {
+    return !!st.user && (!st.user.college || (st.user.role === 'Student' && !st.user.year));
+  }
+
+  views.profile = function () {
+    var isStudent = st.user && st.user.role === 'Student';
+    return '<section class="card"><h1>' + esc(T('profileTitle')) + '</h1><p>' + esc(T('profileLead')) + '</p>' + alerts() +
+      '<form data-form="profile" novalidate>' +
+      (isStudent ? '<label class="field"><span>' + esc(T('yearLabel')) + '</span><select id="f-year"><option value="">' + esc(T('choose')) + '</option>' + yearOptions(st.user.year) + '</select></label>' : '') +
+      collegeField(st.user && st.user.college) +
+      '<div class="row">' + btn('submit', T('saveOn')) + '</div></form></section>';
   };
 
   views.login = function () {
@@ -441,7 +489,7 @@
 
   views.about = function () {
     return '<section class="card">' + hero() + '<p class="sub">' + esc(L(CFG.PROGRAM)) + '</p><h1>' + esc(L(INTRO.title)) + '</h1>' +
-      INTRO.blocks.map(block).join('') + '<div class="row">' +
+      renderBlocks(INTRO.blocks) + '<div class="row">' +
       (st.user ? btn('nav', T('goModules'), '', 'data-v="dashboard"')
                : btn('nav', T('register'), '', 'data-v="register"') + btn('nav', T('back'), 'ghost', 'data-v="welcome"')) + '</div></section>';
   };
@@ -481,6 +529,22 @@
     return h + '</section>';
   };
 
+  function renderBlocks(list) {
+    var out = '', i = 0;
+    while (i < list.length) {
+      var b = list[i], nxt = list[i + 1];
+      if (b && b.t === 'think' && nxt && nxt.t === 'key') {
+        out += block(b) +
+          '<details class="reveal"><summary>' + esc(T('showAnswer')) + '</summary>' + block(nxt) + '</details>';
+        i += 2;
+      } else {
+        out += block(b);
+        i += 1;
+      }
+    }
+    return out;
+  }
+
   function block(b) {
     switch (b.t) {
       case 'p': return '<p>' + esc(L(b.x)) + '</p>';
@@ -519,7 +583,7 @@
       '<div class="bar thin"><i style="width:' + (100 * (i + 1) / n) + '%"></i></div><p class="meta">' + esc(T('step', { i: i + 1, n: n })) + '</p>' + alerts();
     if (i < c.sections.length) {
       var s = c.sections[i];
-      h += '<h1>' + esc(L(s.title)) + '</h1>' + s.blocks.map(block).join('');
+      h += '<h1>' + esc(L(s.title)) + '</h1>' + renderBlocks(s.blocks);
       if (s.type === 'checklist') {
         var done = p.sections.indexOf(s.id) >= 0;
         h += '<div class="checklist">' + s.items.map(function (it, k) {
@@ -757,6 +821,8 @@
     document.documentElement.lang = st.lang;
     document.documentElement.dir = ur() ? 'rtl' : 'ltr';
     document.title = L(CFG.PROGRAM);
+    /* an account missing its college is completed first; the welcome page stays reachable */
+    if (profileNeeded() && st.view !== 'profile' && st.view !== 'welcome') st.view = 'profile';
     /* keep what the learner has typed when only a message changes */
     var saved = {};
     if (keepScroll) {
@@ -789,9 +855,13 @@
       window.scrollTo(0, 0);
     }
   }
+  /* Faculty and staff choose a department; students choose a year of study. */
   function toggleDept() {
-    var role = document.getElementById('f-role'), wrap = document.getElementById('dept-wrap');
-    if (role && wrap) wrap.hidden = !(role.value === 'Faculty' || role.value === 'Staff');
+    var role = document.getElementById('f-role');
+    var dept = document.getElementById('dept-wrap'), year = document.getElementById('year-wrap');
+    if (!role) return;
+    if (dept) dept.hidden = !(role.value === 'Faculty' || role.value === 'Staff');
+    if (year) year.hidden = role.value !== 'Student';
   }
   function val(id) { var el = document.getElementById(id); return el ? String(el.value).trim() : ''; }
   function fail(code) { st.error = code; render(true); var a = app.querySelector('.alert'); if (a && a.scrollIntoView) a.scrollIntoView({ block: 'center' }); }
@@ -866,14 +936,24 @@
     var emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
     if (form === 'register') {
-      var role = val('f-role'), dept = val('f-dept');
+      var role = val('f-role'), dept = val('f-dept'), year = val('f-year'), college = val('f-college');
       if (!val('f-name') || !role || (role !== 'Student' && !dept)) return fail('invalid');
+      if (role === 'Student' && !year) return fail('invalid');
+      if (!college) return fail('invalid');
       if (!emailOk) return fail('email');
       if (pass.length < 8) return fail('weak_password');
       if (pass !== document.getElementById('f-pass2').value) return fail('mismatch');
       if (!document.getElementById('f-consent').checked) return fail('consent');
-      call('register', { name: val('f-name'), email: email, password: pass, role: role, department: role === 'Student' ? '' : dept, lang: st.lang },
+      call('register', { name: val('f-name'), email: email, password: pass, role: role, department: role === 'Student' ? '' : dept,
+                         year: role === 'Student' ? year : '', college: college, lang: st.lang },
         function (r) { applyState(r); if (st.next) { var t0 = st.next; st.next = null; openTarget(t0); } else go('about'); });
+    } else if (form === 'profile') {
+      var pCollege = val('f-college'), pYear = val('f-year');
+      if (!pCollege || (st.user && st.user.role === 'Student' && !pYear)) return fail('invalid');
+      call('profile', { college: pCollege, year: pYear }, function (r) {
+        applyState(r);
+        if (st.next) { var t2 = st.next; st.next = null; openTarget(t2); } else go('dashboard');
+      });
     } else if (form === 'login') {
       if (!emailOk || !pass) return fail('bad_login');
       call('login', { email: email, password: pass }, function (r) {
