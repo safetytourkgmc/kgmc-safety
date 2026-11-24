@@ -448,7 +448,10 @@
 
   /* An account registered before the college was asked for is completed once, here. */
   function profileNeeded() {
-    return !!st.user && (!st.user.college || (st.user.role === 'Student' && !st.user.year));
+    /* Only once the Apps Script knows about these fields: an older deployment sends no
+       college key at all, and asking then would strand the learner on a form it cannot save. */
+    if (!st.user || !('college' in st.user)) return false;
+    return !st.user.college || (st.user.role === 'Student' && !st.user.year);
   }
 
   views.profile = function () {
