@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Urdu Voice Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /* One question per screen: can this device speak Urdu? Verdict first, evidence below. */
+  :root {
+    --bg: #f6f7f4; --card: #ffffff; --ink: #1b2422; --muted: #5d6a66;
+    --line: #e3e8e5; --green: #0f5c4d; --green-dark: #0a4539; --green-soft: #e8f1ee;
+    --red: #b3261e; --red-soft: #fbe9e7; --amber: #8a5a00; --amber-soft: #fff4d6;
+    --ui: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --urdu: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", serif;
+    --shadow: 0 1px 2px rgba(16,48,40,.05), 0 6px 18px rgba(16,48,40,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121719; --card: #1a2124; --ink: #e8eeec; --muted: #9fadA8;
+      --line: #2b3538; --green: #4fae97; --green-dark: #8fd3c0; --green-soft: #17312b;
+      --red: #ef9a93; --red-soft: #3a1f1d; --amber: #e8c46a; --amber-soft: #38300f;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121719; --card: #1a2124; --ink: #e8eeec; --muted: #9fadA8;
+    --line: #2b3538; --green: #4fae97; --green-dark: #8fd3c0; --green-soft: #17312b;
+    --red: #ef9a93; --red-soft: #3a1f1d; --amber: #e8c46a; --amber-soft: #38300f;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.6 var(--ui); -webkit-font-smoothing: antialiased;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 26px 48px;
+  }
+  .wrap { max-width: 660px; margin: 0 auto; display: grid; gap: 18px; }
+  header h1 { font-size: clamp(23px, 5vw, 29px); line-height: 1.2; margin: 0 0 6px; color: var(--green-dark); letter-spacing: -.02em; text-wrap: balance; }
+  header p { margin: 0; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px; box-shadow: var(--shadow); }
+  .verdict { display: grid; gap: 10px; text-align: center; padding: 26px 20px; }
+  .verdict .mark { font-size: 40px; line-height: 1; }
+  .verdict h2 { margin: 0; font-size: 21px; letter-spacing: -.01em; }
+  .verdict p { margin: 0; color: var(--muted); }
+  .verdict.yes { background: var(--green-soft); border-color: var(--green); }
+  .verdict.yes h2 { color: var(--green-dark); }
+  .verdict.no { background: var(--red-soft); border-color: var(--red); }
+  .verdict.no h2 { color: var(--red); }
+  .verdict.wait { background: var(--amber-soft); border-color: var(--amber); }
+  .verdict.wait h2 { color: var(--amber); }
+  h3 { margin: 0 0 10px; font-size: 13px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+  .sample { font-family: var(--urdu); font-size: 21px; line-height: 2.1; direction: rtl; text-align: right; margin: 0 0 16px; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; }
+  button {
+    font: inherit; font-weight: 600; cursor: pointer; min-height: 48px;
+    padding: 11px 22px; border-radius: 11px; border: 2px solid var(--green);
+    background: var(--green); color: #fff; transition: transform .12s;
+  }
+  button.ghost { background: transparent; color: var(--green-dark); }
+  button:active { transform: translateY(1px); }
+  button[disabled] { opacity: .45; cursor: not-allowed; }
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+  li { display: flex; gap: 10px; align-items: baseline; border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; min-width: 0; }
+  li .tag { flex: none; font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--muted); font-variant-numeric: tabular-nums; }
+  li .nm { min-width: 0; overflow-wrap: anywhere; }
+  li.hit { border-color: var(--green); background: var(--green-soft); }
+  .meta { color: var(--muted); font-size: 14px; margin: 12px 0 0; overflow-wrap: anywhere; }
+  .note { margin: 14px 0 0; padding: 12px 14px; border-inline-start: 4px solid var(--green); background: var(--green-soft); border-radius: 10px; font-size: 15px; }
+  details { margin-top: 12px; }
+  summary { cursor: pointer; font-weight: 600; color: var(--green-dark); min-height: 44px; display: flex; align-items: center; }
+  .all { max-height: 280px; overflow-y: auto; margin-top: 10px; }
+  @media (prefers-reduced-motion: reduce) { button { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Can this device speak Urdu?</h1>
+    <p>Open this page in the browser you want to test, then press the button. Works on a phone too.</p>
+  </header>
+
+  <section class="card verdict wait" id="verdict">
+    <div class="mark" id="mark">…</div>
+    <h2 id="headline">Checking the voices on this device</h2>
+    <p id="detail">This takes a second.</p>
+  </section>
+
+  <section class="card">
+    <h3>Hear it for yourself</h3>
+    <p class="sample">الارم بجائیں۔ محفوظ طریقے سے باہر نکلیں۔ اجتماع کے مقام پر پہنچ کر حاضری دیں۔</p>
+    <div class="row">
+      <button id="speakUr">Speak the Urdu</button>
+      <button id="speakEn" class="ghost">Speak English</button>
+      <button id="stop" class="ghost">Stop</button>
+    </div>
+    <p class="meta" id="speakStatus">A line from Module 1 of the safety course.</p>
+  </section>
+
+  <section class="card">
+    <h3>What this device offers</h3>
+    <ul id="urduList"></ul>
+    <p class="meta" id="counts"></p>
+    <details>
+      <summary>Show every voice on this device</summary>
+      <div class="all"><ul id="allList"></ul></div>
+    </details>
+    <p class="meta" id="ua"></p>
+    <div class="row" style="margin-top:14px">
+      <button class="ghost" id="copy">Copy this result</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>What the answer means</h3>
+    <p id="advice" class="note">Waiting for the check to finish.</p>
+  </section>
+</div>
+
+<script>
+  var SAMPLE_UR = 'الارم بجائیں۔ محفوظ طریقے سے باہر نکلیں۔ اجتماع کے مقام پر پہنچ کر حاضری دیں۔';
+  var SAMPLE_EN = 'Raise the alarm. Leave safely. Report to the assembly area.';
+  var synth = window.speechSynthesis;
+  var voices = [], urdu = [];
+
+  function el(id) { return document.getElementById(id); }
+
+  function isUrdu(v) { return /^ur\b|^ur[-_]/i.test(String(v.lang || '')) || /urdu/i.test(String(v.name || '')); }
+
+  function paint() {
+    voices = (synth && synth.getVoices && synth.getVoices()) || [];
+    urdu = voices.filter(isUrdu);
+
+    var v = el('verdict'), mark = el('mark'), head = el('headline'), det = el('detail');
+    v.className = 'card verdict ' + (urdu.length ? 'yes' : 'no');
+    mark.textContent = urdu.length ? '✓' : '✕';
+    head.textContent = urdu.length
+      ? (urdu.length === 1 ? 'Yes — one Urdu voice found' : 'Yes — ' + urdu.length + ' Urdu voices found')
+      : 'No Urdu voice on this device';
+    det.textContent = urdu.length
+      ? 'The course can read Urdu aloud in this browser.'
+      : (voices.length
+          ? 'This browser cannot read the Urdu text aloud. English will still work.'
+          : 'This browser offers no voices at all, so neither Urdu nor English can be read aloud here.');
+
+    var ul = el('urduList');
+    ul.innerHTML = '';
+    if (urdu.length) {
+      urdu.forEach(function (x) {
+        var li = document.createElement('li');
+        li.className = 'hit';
+        li.innerHTML = '<span class="tag"></span><span class="nm"></span>';
+        li.querySelector('.tag').textContent = x.lang;
+        li.querySelector('.nm').textContent = x.name + (x.localService ? '' : ' — online');
+        ul.appendChild(li);
+      });
+    } else {
+      var li = document.createElement('li');
+      li.textContent = 'None.';
+      ul.appendChild(li);
+    }
+
+    var all = el('allList');
+    all.innerHTML = '';
+    voices.slice().sort(function (a, b) { return String(a.lang).localeCompare(String(b.lang)); }).forEach(function (x) {
+      var li = document.createElement('li');
+      if (isUrdu(x)) li.className = 'hit';
+      li.innerHTML = '<span class="tag"></span><span class="nm"></span>';
+      li.querySelector('.tag').textContent = x.lang;
+      li.querySelector('.nm').textContent = x.name;
+      all.appendChild(li);
+    });
+
+    el('counts').textContent = voices.length + ' voices in total, ' + urdu.length + ' of them Urdu.';
+    el('ua').textContent = navigator.userAgent;
+
+    var a = el('advice');
+    if (urdu.length) {
+      a.textContent = 'Urdu listening works here. Anyone using this browser on this kind of device will hear the Urdu text read aloud, with no extra setup.';
+    } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      a.textContent = 'This is an iPhone or iPad. Apple provides no Urdu voice, and every browser on iOS has to use Apple’s own speech engine, so no browser will help here. Only shipping recorded or generated audio files would give these learners Urdu.';
+    } else {
+      a.textContent = 'No Urdu voice is installed. On a computer, Microsoft Edge supplies its own online voices and may work even when this browser does not. On an Android phone, an Urdu voice can be added under Settings, Text-to-speech.';
+    }
+  }
+
+  function speak(text, lang) {
+    if (!synth) return;
+    synth.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    var pick = lang === 'ur'
+      ? urdu[0]
+      : voices.filter(function (v) { return /^en/i.test(v.lang); })[0];
+    if (pick) { u.voice = pick; u.lang = pick.lang; } else { u.lang = lang === 'ur' ? 'ur-PK' : 'en-GB'; }
+    u.onstart = function () { el('speakStatus').textContent = 'Speaking with ' + (pick ? pick.name + ' (' + pick.lang + ')' : 'the browser’s default voice') + '…'; };
+    u.onend = function () { el('speakStatus').textContent = 'Finished. If you heard nothing, this device has no voice for that language.'; };
+    u.onerror = function (e) { el('speakStatus').textContent = 'The browser refused to speak that (' + (e.error || 'unknown reason') + ').'; };
+    if (lang === 'ur' && !urdu.length) {
+      el('speakStatus').textContent = 'There is no Urdu voice here, so you may hear nothing, or the words read as if they were English.';
+    }
+    synth.speak(u);
+  }
+
+  if (!synth || typeof SpeechSynthesisUtterance !== 'function') {
+    var v = el('verdict');
+    v.className = 'card verdict no';
+    el('mark').textContent = '✕';
+    el('headline').textContent = 'This browser cannot read pages aloud at all';
+    el('detail').textContent = 'Try Chrome, Edge or Safari.';
+    el('advice').textContent = 'The speech feature is missing from this browser, so neither English nor Urdu can be read aloud.';
+    ['speakUr', 'speakEn', 'stop'].forEach(function (id) { el(id).disabled = true; });
+  } else {
+    paint();
+    if (typeof synth.addEventListener === 'function') synth.addEventListener('voiceschanged', paint);
+    setTimeout(paint, 600);
+    setTimeout(paint, 2000);
+    el('speakUr').addEventListener('click', function () { speak(SAMPLE_UR, 'ur'); });
+    el('speakEn').addEventListener('click', function () { speak(SAMPLE_EN, 'en'); });
+    el('stop').addEventListener('click', function () { synth.cancel(); el('speakStatus').textContent = 'Stopped.'; });
+  }
+
+  el('copy').addEventListener('click', function () {
+    var lines = [
+      'Urdu voice check',
+      'Urdu voices: ' + (urdu.length ? urdu.map(function (x) { return x.name + ' (' + x.lang + ')'; }).join('; ') : 'none'),
+      'Total voices: ' + voices.length,
+      'Browser: ' + navigator.userAgent
+    ].join('\n');
+    var done = function () { el('copy').textContent = 'Copied'; setTimeout(function () { el('copy').textContent = 'Copy this result'; }, 2000); };
+    try {
+      navigator.clipboard.writeText(lines).then(done, function () { window.prompt && null; el('copy').textContent = 'Select the text above instead'; });
+    } catch (e) { el('copy').textContent = 'Select the text above instead'; }
+  });
+</script>
+</body>
+</html>
